@@ -132,8 +132,8 @@ class LdapProfileSyncSubscriber implements EventSubscriberInterface {
       foreach ($mappings as $key => $mapping) {
         $value = $this->tokenProcessor->ldapEntryReplacementsForDrupalAccount($ldapEntry, $mapping->getLdapAttribute());
 
-	// Extract $entity_type and $field_name from $key
-	list($entity_type, $field_name) = $this->parseUserAttributeNames($key);
+	      // Extract $entity_type and $field_name from $key
+      	list($entity_type, $field_name) = $this->parseUserAttributeNames($key);
 
         if ($entity_type == 'profile') {
           /** @var \Drupal\profile\Entity\ProfileInterface[] $profiles */
@@ -142,9 +142,15 @@ class LdapProfileSyncSubscriber implements EventSubscriberInterface {
               'uid' => $account->id(),
             ]);
           foreach ($profiles as $profile) {
-            if ($profile->hasField($field_name)) {
+            if (!empty($field_name) && $profile->hasField($field_name)) {
               $profile->set($field_name, $value);
               $profile->save();
+            } else {
+              $this->detailLog->log(
+                '@username: Failed to find field @field_name for username in provision.',
+                ['@field_name' => $field_name, '@username' => $account->getAccountName()],
+                'ldap-user'
+              );
             }
           }
         }
