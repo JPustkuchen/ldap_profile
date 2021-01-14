@@ -8,17 +8,16 @@ use Drupal\ldap_servers\Mapping;
  *
  * Add profile fields to ldap Drupal mappings.
  */
-function ldap_profile_ldap_user_attributes_alter(&$attributes, &$params) {
-
+function ldap_profile_ldap_user_attributes_alter(array &$available_user_attrs, array &$params) {
   $entityFieldManager = \Drupal::getContainer()->get('entity_field.manager');
   $profile_fields = $entityFieldManager->getFieldStorageDefinitions('profile');
 
   foreach ($profile_fields as $field_name => $field_instance) {
     $field_id = sprintf("[profile.%s]", $field_name);
-    if (!array_key_exists($field_id, $attributes)) {
-      $attributes[$field_id] = new Mapping(
+    if (!array_key_exists($field_id, $available_user_attrs)) {
+      $available_user_attrs[$field_id] = new Mapping(
         $field_id,
-        t('Field: @label', ['@label' => $field_instance->getLabel()]),
+        t('Profile field: @label', ['@label' => $field_instance->getLabel()]),
         TRUE,
         FALSE,
         [],
@@ -54,15 +53,14 @@ function ldap_profile_form_profile_profile_edit_form_alter(&$form, FormStateInte
     if (count($field) == 2) {
       $entity_type = $field[0];
       $field_name = $field[1];
-
       $fields[$entity_type][] = $field_name;
     }
   }
 
-
   if (array_key_exists('profile', $fields)) {
     foreach ($fields['profile'] as $field_name) {
       $form[$field_name]['#disabled'] = TRUE;
+      $form[$field_name]['#description'] .= ' ' . t('This field is filled by LDAP.');
     }
   }
 }
